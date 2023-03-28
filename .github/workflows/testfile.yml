@@ -1,53 +1,80 @@
-name: Comment on PR status
+# name: Comment on PR status
+
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+# jobs:
+#   comment_on_pr:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check if PR is already commented
+#         id: check_comment
+#         uses: actions/github-script@v6
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const issueCommentResponse = await github.issues.listComments({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               issue_number: context.issue.number
+#             });
+#             const alreadyCommented = issueCommentResponse.data.find(comment => comment.body.includes('opened') || comment.body.includes('updated'));
+#             console.log (alreadyCommented);
+#             return { alreadyCommented };
+
+#       - name: Comment on PR
+#         if: steps.check_comment.outputs.alreadyCommented == null
+#         uses: actions/github-script@v6
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const commentBody = 'opened';
+#             await github.issues.createComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               issue_number: context.issue.number,
+#               body: commentBody
+#             });
+
+#       - name: Update PR comment
+#         if: steps.check_comment.outputs.alreadyCommented != null
+#         uses: actions/github-script@v6
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const commentBody = 'updated';
+#             const lastCommentId = steps.check_comment.outputs.alreadyCommented.id;
+#             await github.issues.updateComment({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               comment_id: lastCommentId,
+#               body: commentBody
+#             });
+
+
+name: PR Commenter
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, reopened, synchronize]
 
 jobs:
-  comment_on_pr:
+  comment-on-pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if PR is already commented
-        id: check_comment
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueCommentResponse = await github.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-            const alreadyCommented = issueCommentResponse.data.find(comment => comment.body.includes('opened') || comment.body.includes('updated'));
-            console.log (alreadyCommented);
-            return { alreadyCommented };
-
+      - name: Check if PR was just opened
+        run: echo ::set-output name=IS_OPENED::$(if [ "${{ github.event_name }}" == "pull_request" ] && [ "${{ github.event.action }}" == "opened" ]; then echo "true"; else echo "false"; fi)
+        id: check-opened
       - name: Comment on PR
-        if: steps.check_comment.outputs.alreadyCommented == null
-        uses: actions/github-script@v6
+        uses: actions/github-script@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const commentBody = 'opened';
-            await github.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            const greeting = ${{ steps.check-opened.outputs.IS_OPENED }} ? "Hello World! and opened" : "updated";
+            github.issues.createComment({
               issue_number: context.issue.number,
-              body: commentBody
-            });
-
-      - name: Update PR comment
-        if: steps.check_comment.outputs.alreadyCommented != null
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const commentBody = 'updated';
-            const lastCommentId = steps.check_comment.outputs.alreadyCommented.id;
-            await github.issues.updateComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: lastCommentId,
-              body: commentBody
-            });
+              body: greeting,
+            })
+          github-token: ${{ secrets.GITHUB_TOKEN }}
