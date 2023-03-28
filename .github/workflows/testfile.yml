@@ -71,7 +71,7 @@ jobs:
         with:
           script: |
             const greeting = ${{ steps.check-opened.outputs.IS_OPENED }} ? "Hello World! and opened" : "updated";
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
